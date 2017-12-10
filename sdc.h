@@ -85,6 +85,7 @@ enum writelocation { LAYER12, CGRAM, GRAPHCURSOR, PATTERN };
 
 
 inline float CtoF (float x) { return x*(9.0/5.0) + 32.0;}
+inline float MtoFt (float x) { return x*(3.03);}
 
 enum RA8875tcursor {NOCURSOR=0,IBEAM,UNDER,BLOCK };//0,1,2,3
 enum RA8875_custom_font {location_1, location_2, location_3, location_4, location_5, location_6, location_7, location_8 };
@@ -136,6 +137,19 @@ extern const uint16_t DEARTH[EARTH_H][EARTH_W]PROGMEM;
 extern const uint16_t world565[] PROGMEM;
 extern const uint16_t charmap[]PROGMEM; 
 extern const uint8_t charmap1[] PROGMEM;
+extern const uint8_t ant_L[] PROGMEM; 
+extern const uint8_t ant_R[] PROGMEM;
+
+extern const uint8_t X_L[] PROGMEM;
+extern const uint8_t X_R[] PROGMEM;
+
+extern const uint8_t bars_L[] PROGMEM;
+extern const uint8_t bars_R[] PROGMEM;
+
+
+
+
+
 
 
 typedef struct {
