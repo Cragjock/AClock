@@ -10,8 +10,8 @@
 
 
 
-static const char* ssid     = "neener";
-static const char* password = "neener";
+static const char* ssid     = "HOMEGROUP";
+static const char* password = "8et3dqkg8c1gv5kw";
 
 static const char* host = "api.usno.navy.mil";
 const char* streamId   = "oneday";
@@ -22,11 +22,11 @@ String nothing = "Failed";
 
 static uint32_t last_wifi; 
 static bool updateMoon();
-static bool updateRiseSet();
+static bool updateRiseSet(const String);
 
 
 // ============= Setup =================
-String my_wifi() 
+String start_wifi() 
 {
   delay(10);
   last_wifi = 0;
@@ -64,10 +64,13 @@ String my_wifi()
   Serial.println(WiFi.gatewayIP());
   Serial.println(WiFi.RSSI());
   Serial.println(WiFi.channel());
+  return nothing; 
+}
 
 
 //====== Now we conencted to the Internet via my router ============
-
+bool update_wifi()
+{
   delay(1);
 
   Serial.print("connecting to ");
@@ -75,20 +78,27 @@ String my_wifi()
 
 
   Serial.print("test update moon call ");
-  updateRiseSet();
+  updateRiseSet(formatDate());
   updateMoon();
   
 
-  return nothing; 
+  return true; 
   
 }
+
+
+
+
+
+
+
 //================================================================
 // http://api.usno.navy.mil/rstt/oneday?date=12/11/2017&loc=Los%20Angeles,%20CA
-static bool updateRiseSet()
+static bool updateRiseSet(const String thedate)
 {
   const char* host = "api.usno.navy.mil";
   const char* oneday   = "oneday";
-  const char* thedate = "12/11/2017";
+  //const char* thedate = "12/11/2017";
   const char* location = "Los%20Angeles,%20CA";
 
   delay(1);    // why is this needed? 
@@ -171,14 +181,16 @@ static bool updateRiseSet()
   Serial.println(sundata1_time);
   Serial.println(sundata1_time.length());
 
-
+  if(NTPResponse != false)
+  {
 
   my_EE_write(EE_SUNRISE, sundata1_time, sundata1_time.length());
   my_EE_write(EE_SUNSET, sundata3_time, sundata3_time.length());
 
   my_EE_write(EE_MOONRISE, moondata0_time, moondata0_time.length());
   my_EE_write(EE_MOONSET, moondata2_time, moondata2_time.length());
-
+  
+  }
 
   
   return true;  
@@ -242,7 +254,7 @@ static bool updateMoon()
 {
   const char* host = "api.usno.navy.mil";
   const char* oneday   = "phase";
-  const char* thedate = "12/6/2017";
+  const char* thedate = "12/11/2017";
   //const char* location = "Los%20Angeles,%20CA";
   const char* numbers ="4";
 
@@ -313,11 +325,17 @@ static bool updateMoon()
       return nothing;
     }
 
+  if(NTPResponse != false)
+  {
+
   JsonArray& phasedata = root["phasedata"];
 
   JsonObject& phasedata0 = phasedata[0];
   String phasedata0_phase = phasedata0["phase"]; // "New Moon"
-  String phasedata0_date = phasedata0["date"]; // "2017 Dec 18"
+  //String phasedata0_date = phasedata0["date"]; // "2017 Dec 18"
+
+  String phasedata0_date = root["phasedata"][0]["date"];
+  
   my_EE_write(EE_MOONNEW, phasedata0_date, phasedata0_date.length());
   String phasedata0_time = phasedata0["time"]; // "06:30"
 
@@ -338,7 +356,7 @@ static bool updateMoon()
   String phasedata3_date = phasedata3["date"]; // "2018 Jan 08"
   my_EE_write(EE_MOONLAST, phasedata3_date, phasedata3_date.length());
   String phasedata3_time = phasedata3["time"]; // "22:25"
-
+  }
   
   return true;  
 /***********************************************************************
