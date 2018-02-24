@@ -1,5 +1,6 @@
 
 #include "my_eeprom.h"
+#include <string>
 
 
 
@@ -11,7 +12,7 @@ const uint16_t nv_sizes[EE_END] =
     15, // EE_MOONRISE     2
     15, // EE_MOONSET      3
     15, // EE_MOONPERCENT  4
-    4,  // EE_MOONCURPHASE 5
+    18, // EE_MOONCURPHASE 5
     15, // EE_MOONLAST     6
     15, // EE_MOONNEW      7
     15, // EE_MOONFULL     8
@@ -21,8 +22,21 @@ const uint16_t nv_sizes[EE_END] =
     4,  // EE_LNG          12
     1,  // EE_UTC_OFFSET   13
     15, // EE_LASTUPDATE   14
+    20  // EE_LOCATION     15
 };
 
+// string size with out \0 
+// New Moon 8
+// Waxing Crescent 15
+// First Quarter 13
+// Waxing Gibbous 14
+// Full Moon 9
+// Waning Gibbous 14
+// Last Quarter 12
+// Waning Crescent 15
+
+
+// 02/02/2018  needs 11, 10 for the date + 1 for \0 
 
 
 //========================================================
@@ -41,13 +55,28 @@ bool my_EE_write(EE_Name e, String &data, uint8_t len)
 
   //Serial.print("wr_address: ");
   //Serial.println(wr_address);
+
+  char * cstr = new char [data.length()+1];
+  strcpy (cstr, data.c_str());
+  uint8_t str_length = data.length()+1; 
   
   EEPROM.begin(EE_SIZE);
   {
-    for(int i=0; i< len; i++)
-      EEPROM.write(  (wr_address+i) , data[i]);
+    // for(int i=0; i< len; i++)
+    for(int i=0; i< str_length; i++)
+      EEPROM.write(  (wr_address+i) , cstr[i]);
+      // EEPROM.write(  (wr_address+i) , data[i]);
+
+   // EEPROM.write(  (wr_address+len) , '\0');     // add terminating zero data.c_str()
+
+   //std::string str ("Please split this sentence into tokens");
+
+
    
   }
+
+
+  
   EEPROM.end();
   return true; 
   

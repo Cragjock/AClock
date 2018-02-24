@@ -28,7 +28,8 @@ typedef enum
     EE_LNG,             // 12
     EE_UTC_OFFSET,      // 13
     EE_LASTUPDATE,      // 14
-    EE_END              // 15
+    EE_LOCATION,        // 15
+    EE_END              // 16
 } EE_Name;
 
 extern const uint16_t nv_sizes[EE_END];

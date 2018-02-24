@@ -23,7 +23,7 @@ String formatTime();
 double JD_Now(const tmElements_t* pTM);
 double JD_Jan0(int year);
 extern bool NTPResponse; 
-
+// extern DateTime now1; 
 
 
 

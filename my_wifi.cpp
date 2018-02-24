@@ -22,7 +22,10 @@ String nothing = "Failed";
 
 static uint32_t last_wifi; 
 static bool updateMoon();
+static bool updateMoon(const String);
 static bool updateRiseSet(const String);
+
+extern enum what_phase {FQ, F, LC,LQ, NC, NH, OH} moondisplay; 
 
 
 // ============= Setup =================
@@ -35,7 +38,7 @@ String start_wifi()
 
   Serial.println();
   Serial.println();
-  Serial.print("Connecting to ");
+  Serial.print(F("Connecting to "));
   Serial.println(ssid);
   
   WiFi.begin(ssid, password);
@@ -44,7 +47,7 @@ String start_wifi()
   // check for the presence of the shield:
   if (WiFi.status() == WL_NO_SHIELD) 
   {
-    Serial.println("WiFi shield not present");
+    Serial.println(F("WiFi shield not present"));
     // don't continue:
     while (true);
   }
@@ -57,13 +60,16 @@ String start_wifi()
   }
 
   Serial.println("");
-  Serial.println("WiFi connected");  
-  Serial.println("IP address: ");
+  Serial.println(F("WiFi connected"));  
+  Serial.println(F("IP address: "));
   Serial.println(WiFi.localIP());
   Serial.println(WiFi.subnetMask());
   Serial.println(WiFi.gatewayIP());
   Serial.println(WiFi.RSSI());
   Serial.println(WiFi.channel());
+
+  //WiFi.printDiag(Serial);
+  
   return nothing; 
 }
 
@@ -73,13 +79,13 @@ bool update_wifi()
 {
   delay(1);
 
-  Serial.print("connecting to ");
+  Serial.print(F("connecting to "));
   Serial.println(host);
 
 
-  Serial.print("test update moon call ");
+  Serial.println(F("test update moon call "));
   updateRiseSet(formatDate());
-  updateMoon();
+  updateMoon(formatDate());
   
 
   return true; 
@@ -93,7 +99,7 @@ bool update_wifi()
 
 
 //================================================================
-// http://api.usno.navy.mil/rstt/oneday?date=12/11/2017&loc=Los%20Angeles,%20CA
+// http://api.usno.navy.mil/rstt/oneday?date=2/17/2018&loc=Los%20Angeles,%20CA
 static bool updateRiseSet(const String thedate)
 {
   const char* host = "api.usno.navy.mil";
@@ -111,7 +117,7 @@ static bool updateRiseSet(const String thedate)
   const int httpPort = 80;
   if (!rsst_client.connect(host, httpPort)) 
   {
-    Serial.println("connection failed");
+    Serial.println(F("connection failed"));
     return nothing;
   }
 
@@ -124,8 +130,10 @@ static bool updateRiseSet(const String thedate)
   url += "&loc=";
   url += location;
   
-  Serial.print("Requesting URL: ");
+  Serial.print(F("Requesting URL: "));
   Serial.println(url);
+
+  rsst_client.setTimeout(200); 
   
   // This will send the request to the server
   rsst_client.print(String("GET ") + url + " HTTP/1.0\r\n" +
@@ -134,6 +142,7 @@ static bool updateRiseSet(const String thedate)
   unsigned long timeout = millis();
   while (rsst_client.available() == 0) 
   {
+      // Serial.println(F("rsst_client.available: "));
     if (millis() - timeout > 5000) {
       Serial.println(">>> Client Timeout !");
       rsst_client.stop();
@@ -146,14 +155,25 @@ static bool updateRiseSet(const String thedate)
 
   
   // Read all the lines of the reply from server and print them to Serial
+  Serial.println("[READING REPLY] ");
+
+
+  
   while(rsst_client.available())
   {
+    // Serial.println(F("read all lines: "));
     //String line = client.readStringUntil('\r');
     line = rsst_client.readStringUntil('\r');
+    Serial.print(line);
   }
+  Serial.println("[Read REPLY end] ");
+
+
+  
   //      Serial.print(line);
   char endOfHeaders[] = "\r\n\r\n";
   rsst_client.find(endOfHeaders);
+  // Serial.println(F("done reading url lines: "));
 
   const size_t BUFFER_SIZE = JSON_ARRAY_SIZE(3) + JSON_ARRAY_SIZE(5) + 8*JSON_OBJECT_SIZE(2) + JSON_OBJECT_SIZE(3) + JSON_OBJECT_SIZE(19) + 570;
   DynamicJsonBuffer jsonBuffer(BUFFER_SIZE);
@@ -163,7 +183,7 @@ static bool updateRiseSet(const String thedate)
     if (!root.success()) 
     {
       String nogood = "Failed";
-      Serial.println("parseObject() failed");
+      Serial.println(F("parseObject() failed"));
       Serial.println(jsonBuffer.size());
       return nothing;
     }
@@ -175,11 +195,57 @@ static bool updateRiseSet(const String thedate)
   JsonArray& moondata = root["moondata"];
   String moondata0_time = moondata[0]["time"]; 
   String moondata2_time = moondata[2]["time"];
+  String moon_phase = root["curphase"];
+
+
+  Serial.print(" ~~~~~~~~~~~~~~moon_phase: ");
+  Serial.println(moon_phase);  
+
+
+  // Set-up the variable for displaying the moon phase image 
+
+  if(moon_phase == "Full Moon")
+  {
+    moondisplay = F; 
+  }
+  else if(moon_phase == "Waxing Crescent")
+  {
+    moondisplay = NC; 
+  }
+  else if(moon_phase == "First Quarter")
+  {
+    moondisplay = FQ; 
+  }
+  else if(moon_phase == "Last Quarter")
+  {
+    moondisplay = LQ; 
+  }
+  else if(moon_phase == "Waning Crescent")
+  {
+    moondisplay = LC; 
+  }
 
 
 
-  Serial.println(sundata1_time);
-  Serial.println(sundata1_time.length());
+  Serial.print("MMMMMMMMMoondisplay: ");
+  Serial.println(moondisplay);
+  
+  
+// String moon_phase options 
+// New Moon
+// Waxing Crescent
+// First Quarter
+// Waxing Gibbous
+// Full Moon
+// Waning Gibbous
+// Last Quarter
+// Waning Crescent
+// extern enum what_phase {FQ, F, LC,LQ, NC, NH, OH} moondisplay; 
+
+
+  //Serial.print("moon_phase: ");
+  //Serial.println(moon_phase);
+  //Serial.println(moon_phase.length());
 
   if(NTPResponse != false)
   {
@@ -189,6 +255,9 @@ static bool updateRiseSet(const String thedate)
 
   my_EE_write(EE_MOONRISE, moondata0_time, moondata0_time.length());
   my_EE_write(EE_MOONSET, moondata2_time, moondata2_time.length());
+
+
+  my_EE_write(EE_MOONCURPHASE, moon_phase, moon_phase.length());
   
   }
 
@@ -249,18 +318,18 @@ const char* curphase = root["curphase"]; // "Waning Cresc
 
 
 //================================
-//http://api.usno.navy.mil/moon/phase?date=12/11/2017&nump=4
-static bool updateMoon()
+//http://api.usno.navy.mil/moon/phase?date=2/17/2018&nump=4
+static bool updateMoon(const String thedate)
 {
   const char* host = "api.usno.navy.mil";
   const char* oneday   = "phase";
-  const char* thedate = "12/11/2017";
+  //const char* thedate = "12/11/2017";
   //const char* location = "Los%20Angeles,%20CA";
   const char* numbers ="4";
 
   delay(1);    // why is this needed? 
 
-  Serial.print("connecting to ");
+  Serial.print(F("connecting to "));
   Serial.println(host);
   
   // Use WiFiClient class to create TCP connections
@@ -268,7 +337,7 @@ static bool updateMoon()
   const int httpPort = 80;
   if (!phase_client.connect(host, httpPort)) 
   {
-    Serial.println("connection failed");
+    Serial.println(F("connection failed"));
     return nothing;
   }
 
@@ -281,8 +350,10 @@ static bool updateMoon()
   url += "&nump=";
   url += numbers;
   
-  Serial.print("Requesting URL: ");
+  Serial.print(F("Requesting URL: "));
   Serial.println(url);
+
+  phase_client.setTimeout(200);
   
   // This will send the request to the server
   phase_client.print(String("GET ") + url + " HTTP/1.0\r\n" +
@@ -307,6 +378,7 @@ static bool updateMoon()
   {
     //String line = client.readStringUntil('\r');
     line = phase_client.readStringUntil('\r');
+    Serial.print(line);
   }
   //        Serial.print(line);
   char endOfHeaders[] = "\r\n\r\n";
@@ -320,7 +392,7 @@ static bool updateMoon()
     if (!root.success()) 
     {
       String nogood = "Failed";
-      Serial.println("parseObject() failed");
+      Serial.println(F("parseObject() failed"));
       Serial.println(jsonBuffer.size());
       return nothing;
     }
@@ -331,30 +403,30 @@ static bool updateMoon()
   JsonArray& phasedata = root["phasedata"];
 
   JsonObject& phasedata0 = phasedata[0];
-  String phasedata0_phase = phasedata0["phase"]; // "New Moon"
+  String phasedata0_phase = phasedata0["phase"]; // "Last Quarter" EE_MOONLAST
   //String phasedata0_date = phasedata0["date"]; // "2017 Dec 18"
 
   String phasedata0_date = root["phasedata"][0]["date"];
   
-  my_EE_write(EE_MOONNEW, phasedata0_date, phasedata0_date.length());
+  my_EE_write(EE_MOONLAST, phasedata0_date, phasedata0_date.length());
   String phasedata0_time = phasedata0["time"]; // "06:30"
 
   JsonObject& phasedata1 = phasedata[1];
-  String phasedata1_phase = phasedata1["phase"]; // "First Quarter"
+  String phasedata1_phase = phasedata1["phase"]; // "New Moon" EE_MOONNEW
   String phasedata1_date = phasedata1["date"]; // "2017 Dec 26"
-  my_EE_write(EE_MOONFIRST, phasedata1_date, phasedata1_date.length());
+  my_EE_write(EE_MOONNEW, phasedata1_date, phasedata1_date.length());
   String phasedata1_time = phasedata1["time"]; // "09:20"
 
   JsonObject& phasedata2 = phasedata[2];
-  String phasedata2_phase = phasedata2["phase"]; // "Full Moon"
+  String phasedata2_phase = phasedata2["phase"]; // "First Quarter" EE_MOONFIRST
   String phasedata2_date = phasedata2["date"]; // "2018 Jan 02"
-  my_EE_write(EE_MOONFULL, phasedata2_date, phasedata2_date.length());
+  my_EE_write(EE_MOONFIRST, phasedata2_date, phasedata2_date.length());
   String phasedata2_time = phasedata2["time"]; // "02:24"
 
   JsonObject& phasedata3 = phasedata[3];
-  String phasedata3_phase = phasedata3["phase"]; // "Last Quarter"
+  String phasedata3_phase = phasedata3["phase"]; // "Full Moon" EE_MOONFULL
   String phasedata3_date = phasedata3["date"]; // "2018 Jan 08"
-  my_EE_write(EE_MOONLAST, phasedata3_date, phasedata3_date.length());
+  my_EE_write(EE_MOONFULL, phasedata3_date, phasedata3_date.length());
   String phasedata3_time = phasedata3["time"]; // "22:25"
   }
   

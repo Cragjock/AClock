@@ -139,13 +139,6 @@ void displaycustomChar(enum RA8875_custom_font address, uint8_t more)
 }
 
 
-
-
-
-
-
-  
-
 // ===== drawsthe LCD Display image =====
 void draw_map(const uint16_t scmap[],uint16_t r, uint16_t c, Box mapbox)
 {
@@ -170,10 +163,6 @@ void draw_map(const uint16_t scmap[],uint16_t r, uint16_t c, Box mapbox)
       }
     }  
 }
-
-
-
-
 
 
 const uint8_t g1_cursor[] PROGMEM = {

@@ -17,10 +17,10 @@ IPAddress timeServer(129, 6, 15, 30); // time-c.timefreq.bldrdoc.gov 129.6.15.30
 
 
 // const int timeZone = 1;     // Central European Time
-//const int timeZone = -5;  // Eastern Standard Time (USA)
-//const int timeZone = -4;  // Eastern Daylight Time (USA)
+// const int timeZone = -5;  // Eastern Standard Time (USA)
+// const int timeZone = -4;  // Eastern Daylight Time (USA)
 const int timeZone = -8;  // Pacific Standard Time (USA)
-//const int timeZone = -7;  // Pacific Daylight Time (USA)
+// const int timeZone = -7;  // Pacific Daylight Time (USA)
 
 
 WiFiUDP Udp;
@@ -52,12 +52,8 @@ void NTP_setup()
       return;
   }
 
-
-  
   Serial.print("Local port: ");
   Serial.println(Udp.localPort());
-
-
   
   Serial.println(F("waiting for sync"));
   setSyncProvider(getNtpTime);
@@ -68,16 +64,22 @@ time_t prevDisplay = 0; // when the digital clock was displayed
 
 void NTP_loop()
 {  
-  if (timeStatus() != timeNotSet) 
+  // Serial.print("NTP loop Time status: ");
+  // Serial.println(timeStatus());
+  
+  if (timeStatus() != timeNotSet)     // typedef enum {timeNotSet, timeNeedsSync, timeSet}  timeStatus_t ;
   {
-    if (now() != prevDisplay)
-    { //update the display only if time has changed
+    if (now() != prevDisplay)       //update the display only if time has changed
+    { 
       prevDisplay = now();
       digitalClockDisplay();  
     }
   }
 
 /**************************
+ *  setTime(now1.hour(), now1.minute(), now1.second(),now1.day(), now1.month(), now1.year());
+ typedef enum {timeNotSet, timeNeedsSync, timeSet}  timeStatus_t ;
+ 
   if(timeStatus()!= timeSet)
     Serial.println("Unable to sync with the RTC");
   else
@@ -214,14 +216,17 @@ String formatTime()
   return date_string; 
 }
 
+
+
+
 double JD_Now(const tmElements_t* pTM)
 {
 // use Meeus page 61
     double Y,M,D,H,S;
     double jd;
     double A,B; 
-    Y=pTM->Year+1970;
-    M=pTM->Month+1;
+    Y=pTM->Year+1970;   // see timelib.h 
+    M=pTM->Month;
     if(M<=2)
     {
         Y=Y-1;
@@ -236,10 +241,16 @@ double JD_Now(const tmElements_t* pTM)
     H=( (double)pTM->Hour+ (dmin + dsec )/60.0)/24.0;
     //Serial.println(H);
     D=D+H;
+    //Serial.print("D: ");
     //Serial.println(D);
     A=(int)(Y/100);
     B=2-A+(int)(A/4);
+    int C=365.25*(Y+4716);
+    int E=30.6001*14;
+    //tempjd=(C+E)+B-1524.5;
     jd=(int)(365.25*(Y+4716))+(int)(30.6001*(M+1))+D+B-1524.5;
+    //tempjd=((365.25*(yr+4716))+(30.6001*14))+B-1524.5;
+
 //======================
 
   double ETime=0.0;
@@ -272,7 +283,8 @@ double JD_Now(const tmElements_t* pTM)
 
 
   
-  return ETime;
+  //return ETime;
+  return jd; 
 
 }
 
@@ -295,6 +307,6 @@ double JD_Jan0(int jyear)
   temp1=(C+E)+B-1524.5;
   //temp1=((365.25*(yr+4716))+(30.6001*14))+B-1524.5;
 
-  return temp;
+  return temp1;
 }
 
