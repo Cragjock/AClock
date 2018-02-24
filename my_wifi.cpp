@@ -10,8 +10,8 @@
 
 
 
-static const char* ssid     = "HOMEGROUP";
-static const char* password = "8et3dqkg8c1gv5kw";
+static const char* ssid     =
+static const char* password = 
 
 static const char* host = "api.usno.navy.mil";
 const char* streamId   = "oneday";
